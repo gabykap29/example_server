@@ -1,4 +1,5 @@
 import json
+import math
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -13,7 +14,7 @@ from src.schemas.inventory import InventoryCreate, InventoryUpdate, InventoryBul
 router = APIRouter(prefix="/inventory", tags=["inventory"])
 
 
-@router.get("/", response_model=dict)
+@router.get("/")
 async def get_inventory(
     session: AsyncSession = Depends(get_session),
 ) -> dict:
@@ -24,7 +25,7 @@ async def get_inventory(
     inventory = await service.get_inventory()
     return inventory
 
-@router.get("/all", response_model=dict)
+@router.get("/all")
 async def get_inventory_all(
     session: AsyncSession = Depends(get_session),
 ) -> dict:
@@ -101,7 +102,13 @@ async def create_bulk_from_file(
     json_path = Path(__file__).resolve().parent.parent.parent / "bulk.json"
     with open(json_path, "r") as f:
         bulk_data = json.load(f)
-    items = bulk_data["items"][:data.quantity]
+    items = bulk_data["items"]
+    if len(items) < data.quantity:
+        n = math.ceil(data.quantity // len(items))
+        items = (items * n)[:data.quantity]
+    else:
+        items = bulk_data["items"][:data.quantity]
+
     inventories = [
         Inventory(name=item["name"], amount=item["amount"])
         for item in items

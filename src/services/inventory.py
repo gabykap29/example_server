@@ -1,12 +1,13 @@
 from sqlmodel import Session, select
 from src.models import Inventory
 import time
+import random
 
 class InventoryService:
-    def __init__(self, session: Session = None):
+    def __init__(self, session: Session):
         self.session = session
 
-    async def create_all(self, inventories: list) -> dict:
+    async def create_all(self, inventories: list[Inventory]) -> dict:
         """ Crear todos los inventarios uno a uno
             complejidad O(n)
         """
@@ -35,28 +36,34 @@ class InventoryService:
         """ Obtener todos los inventarios """
         try:
             start_time = time.time()
-            statement = select(Inventory).where(Inventory.name == "producto_1")
+            statement = select(Inventory)
             result = await self.session.exec(statement)
             inventory = result.all()
-            inventory.sort(key=lambda x: x.amount, reverse=True)
+            n = random.randint(0, 100)
+            inventory_filter = list(filter(lambda x: x.name == f"producto_{n}", inventory))
+            inventory_filter.sort(key=lambda x: x.amount, reverse=True)
+
+            print("after filtering: ", len(inventory_filter), f"producto_{n}")
+
             return {
-                "amount": inventory,
+                "amount": len(inventory_filter),
                 "time": time.time() - start_time
             }
         except Exception as e:
             print(e)
             return []
+
     async def get_inventory_all(self) -> list:
         """ Obtener todos los inventarios """
         try:
             start_time = time.time()
-            statement = select(Inventory).order_by(Inventory.id.desc())
+            n = random.randint(0, 100)
+            statement = select(Inventory).order_by(Inventory.id.desc()).where(Inventory.name == f"producto_{n}")
             result = await self.session.exec(statement)
             inventory = result.all()
-            inventory_filter = filter(lambda x: x.name == "producto_1", inventory)
 
             return {
-                "inventories": inventory_filter,
+                "amount": len(inventory),
                 "time": time.time() - start_time
             }
         except Exception as e:
