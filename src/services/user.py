@@ -51,7 +51,7 @@ class UserService:
             return None
 
     async def create_users_numpy(self, quantity: int) -> dict:
-        """ Crear usuarios usando numpy para generar datos vectorizados (O(1)) """
+        """ Crear usuarios usando numpy para generar datos vectorizados (O(n)) """
         try:
             start_time = time.time()
             names = np.array([f"user_{i}" for i in range(1, quantity + 1)])

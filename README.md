@@ -1,6 +1,6 @@
 # Example Server - FastAPI
 
-Servidor API construido con **FastAPI** y **SQLModel** para probar endpoints y medir complejidad algorítmica. Incluye comparaciones de rendimiento entre distintas implementaciones (O(n) vs O(1), vectorizado con NumPy, Timsort vs SQL ORDER BY, etc.).
+Servidor API construido con **FastAPI** y **SQLModel** para probar endpoints y medir complejidad algorítmica. Incluye comparaciones de rendimiento entre distintas implementaciones (distintas estrategias con la misma complejidad asintótica, vectorizado con NumPy, Timsort vs SQL ORDER BY, etc.).
 
 ## Tecnologías
 
@@ -103,7 +103,7 @@ curl -X POST http://localhost:8000/users/ \
   -H "Content-Type: application/json" \
   -d '{"name": "Juan", "email": "juan@mail.com"}'
 
-# Crear 1000 usuarios con NumPy (O(1) vectorizado)
+# Crear 1000 usuarios con NumPy (O(n))
 curl -X POST http://localhost:8000/users/bulk-numpy \
   -H "Content-Type: application/json" \
   -d '{"quantity": 1000}'
@@ -122,7 +122,7 @@ curl -X POST http://localhost:8000/users/bulk-for \
 | GET | `/inventory/all` | Obtener inventario ordenado delegando a la DB (SQL ORDER BY) |
 | POST | `/inventory/` | Crear un item de inventario |
 | POST | `/inventory/bulk` | Crear inventarios desde archivo JSON - inserción uno a uno (O(n)) |
-| POST | `/inventory/bulck` | Crear inventarios desde archivo JSON - inserción bulk con `add_all` (O(1)) |
+| POST | `/inventory/bulck` | Crear inventarios desde archivo JSON - inserción bulk con `add_all` (O(n)) |
 | PUT | `/inventory/{inventory_id}` | Actualizar un inventario |
 | DELETE | `/inventory/{inventory_id}` | Eliminar un inventario |
 
@@ -139,7 +139,7 @@ curl -X POST http://localhost:8000/inventory/bulk \
   -H "Content-Type: application/json" \
   -d '{"quantity": 100}'
 
-# Insertar 100 items con add_all (O(1))
+# Insertar 100 items con add_all (O(n))
 curl -X POST http://localhost:8000/inventory/bulck \
   -H "Content-Type: application/json" \
   -d '{"quantity": 100}'
@@ -170,12 +170,14 @@ Este servidor permite comparar el rendimiento entre distintas implementaciones:
 
 | Comparación | Endpoint A (lento) | Endpoint B (rápido) | Diferencia |
 |-------------|-------------------|---------------------|------------|
-| Creación bulk de usuarios | `POST /users/bulk-for` (O(n)) | `POST /users/bulk-numpy` (O(1) vectorizado) | For secuencial vs NumPy vectorizado |
-| Creación bulk de inventario | `POST /inventory/bulk` (O(n)) | `POST /inventory/bulck` (O(1)) | Inserción individual vs `add_all` |
+| Creación bulk de usuarios | `POST /users/bulk-for` (O(n)) | `POST /users/bulk-numpy` (O(n)) | For secuencial con múltiples `commit()` vs generación y commit por lote |
+| Creación bulk de inventario | `POST /inventory/bulk` (O(n)) | `POST /inventory/bulck` (O(n)) | Inserción con `add()` en bucle vs inserción con `add_all()` |
 | Ordenamiento de inventario | `GET /inventory/` (Timsort en Python) | `GET /inventory/all` (SQL ORDER BY) | `.sort()` + `filter()` vs delegar a DB |
 | Ordenamiento de personas | `GET /persons/sorted` | `GET /persons/incremented-age` | `.sort()` vs iteración con for |
 
 Los endpoints que miden tiempo devuelven el campo `"time"` en la respuesta para facilitar comparaciones directas.
+
+Importante: en varios casos la complejidad asintótica es la misma, pero el rendimiento práctico cambia mucho por costos de transacción, materialización de objetos del ORM, I/O y trabajo delegado a la base de datos.
 
 ## Notas
 

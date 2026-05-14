@@ -125,7 +125,7 @@ async def create_bulck_from_file(
     data: InventoryBulkFromFileCreate,
     session: AsyncSession = Depends(get_session),
 ):
-    """Crear inventarios desde archivo JSON de forma asíncrona (O(1))."""
+    """Crear inventarios desde archivo JSON de forma asíncrona (O(n))."""
     json_path = Path(__file__).resolve().parent.parent.parent / "bulk_async.json"
     with open(json_path, "r") as f:
         bulk_data = json.load(f)

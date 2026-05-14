@@ -22,7 +22,7 @@ class InventoryService:
         
     async def create_all_async(self, inventories: list) -> list:
         """ Crea todos los inventarios pero se lo delega a la base de datos
-        complejidad O(1)
+        complejidad O(n)
         """
         try:
             self.session.add_all(inventories)
